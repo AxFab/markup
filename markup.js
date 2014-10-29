@@ -51,6 +51,7 @@
   markup.commands = {
 
     extends:function (mark, ctx) {
+      if (markup.debug) console.log ('    ' + mark.literal)
       if (mark.value.length != 1) {
         console.error ('The command \'extends\' take one argument');
         return null;
@@ -59,7 +60,8 @@
       return null;
     },
 
-    set:function (mark, ctx) {
+    set:function (mark, ctx, callback) {
+      if (markup.debug) console.log ('    ' + mark.literal)
       if (mark.value.length != 2) {
         console.error ('The command \'set\' take two arguments');
         return null;
@@ -68,7 +70,8 @@
       return null
     },
 
-    get:function (mark, ctx) {
+    get:function (mark, ctx, callback) {
+      if (markup.debug) console.log ('    ' + mark.literal)
       if (mark.value.length != 1) {
         console.error ('The command \'get\' take one argument');
         return null;
@@ -76,9 +79,10 @@
       return { type:'T', value:ctx.eval (mark.value[0])}
     },
 
-    get_if:function (mark, ctx) {
-      if (mark.value.length != 3) {
-        console.error ('The command \'get_if\' take three arguments');
+    get_if:function (mark, ctx, callback) {
+      if (markup.debug) console.log ('    ' + mark.literal)
+      if (mark.value.length != 2 && mark.value.length != 3) {
+        callback ('The command \'get_if\' take two or three arguments');
         return null;
       }
       
@@ -88,6 +92,7 @@
     },
 
     doLayout:function (mark, ctx, callback) {
+      if (markup.debug) console.log ('    ' + mark.literal)
       if (mark.value.length != 1) {
         callback ('The command \'doLayout\' take one argument');
         return null;
@@ -98,6 +103,7 @@
     },
 
     include:function (mark, ctx, callback) {
+      if (markup.debug) console.log ('    ' + mark.literal)
       if (mark.value.length != 1) {
         callback ('The command \'include\' take one argument');
         return null;
@@ -126,7 +132,8 @@
     else if (!options.getParent)
       options = new markupCtx(options)
 
-    // if (DEBUG) console.log ('renderFile', path)
+    if (markup.debug) console.log ('renderFile', path)
+
     fs.readFile (path, function (err, data) {
       if (err && !path.endswith ('/500.html')) {
         console.error (path, err)
@@ -196,6 +203,9 @@
     }
 
     array.push (data)
+    if (markup.debug) console.log ('File made of '+array.length+' blocks using '+commands.length+' commands')
+    if (markup.debug && parent) console.log ('File have parent: '+ parent.value[0])
+
 
     // Regroup page
     if (commands.length == 0) {
