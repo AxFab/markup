@@ -60,7 +60,7 @@
     this.system = {};
     
     // caching capability
-    this.caching = 'static';
+    this.caching = 'static'; // static > query > session > volatile
     this.sessionUpdate = false;
     
     /**
@@ -68,11 +68,13 @@
      * @param {String} [name] variable name
      * @return {String} Value store on the variable
      * @todo Add warning variable is undefined!
-     */   
+     */
     this.varGet = function (name) {
       if (name.startswith('query.')) {
         if (this.caching == 'static')
           this.caching = 'query';
+        if (this.query == null)
+          this.query = {}
         return this.query[name.substring(6, name.length)];
       }
       if (name.startswith('session.')) {

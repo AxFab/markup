@@ -63,20 +63,22 @@
     set:function (mark, ctx, callback) {
       if (markup.debug) console.log ('    ' + mark.literal)
       if (mark.value.length != 2) {
-        console.error ('The command \'set\' take two arguments');
+        callback ('The command \'set\' take two arguments');
         return null;
       }
       ctx.varSet(mark.value[0], ctx.eval (mark.value[1]))
-      return null
+      callback();
     },
 
     get:function (mark, ctx, callback) {
       if (markup.debug) console.log ('    ' + mark.literal)
       if (mark.value.length != 1) {
-        console.error ('The command \'get\' take one argument');
+        callback ('The command \'get\' take one argument');
         return null;
       }
-      return { type:'T', value:ctx.eval (mark.value[0])}
+
+      mark.data = ctx.eval (mark.value[0])
+      callback()
     },
 
     get_if:function (mark, ctx, callback) {
@@ -88,7 +90,11 @@
       
       var cdt = ctx.eval (mark.value[0]);
       var v = (cdt != '' && cdt != false) ? 1 : 2
-      return { type:'T', value:ctx.eval (mark.value[v]) }
+      if (v == 2 && mark.value.length == 2)
+        mark.data = ''
+      else 
+        mark.data = ctx.eval (mark.value[v])
+      callback()
     },
 
     doLayout:function (mark, ctx, callback) {
@@ -216,11 +222,13 @@
     } else {
 
       async.each (commands, function (cmd, callback) {
-        markup.commands[cmd.type] (cmd, options, callback)
+        if (markup.commands[cmd.type] == null)
+          callback('No command named ' + cmd.type)
+        else
+          markup.commands[cmd.type] (cmd, options, callback)
       }, function (err) {
         if (err) callback (err, null)
         else {
-              
           if (parent)
             markup.commands.extends (parent, options)
           markup.finish (array, options, callback)
@@ -269,29 +277,46 @@
       c = '';
       
       if (tag[0] == '/' && tag[1] == '}')
-        return {type:command, value:args };
+        return {type:command, value:args, literal:mark };
       tag = tag.substring(1);
     }
   }
 
+
   // ----------------------------------------------------------------------
   markup.lookFor = function(req, res) {
-    if (req.url == '/')
-      res.render ('index');
-    else {
-      // Note: As express doesn't allow to recover we try to check 
-      // everything first, but it's a bad design !
-      fs.exists (markup.directory + req.url, function (exist) {
-        var name = req.url.substring(1, req.url.length - 5) // Seriously !?
-        if (exist) 
-          res.render (name);
-        else 
-          res.render ('404'); // File not found!
-      })
-    }
+    // Note: As express doesn't allow to recover we try to check 
+    // everything first, but it's a bad design !
+    fs.exists (markup.directory + req.url, function (exist) {
+      if (req.url.endswith('/')) {
+        res.render (req.url.substring(1) + 'index');
+      } else if (exist) {
+        var name = req.url.substring(1, req.url.length - 5) // Seriously !? (REMOVE .html)
+        res.render (name);
+      } else {
+        if (markup.debug) console.log ('Could not find the file', markup.directory + req.url)
+        res.render ('404'); // File not found!
+      }
+    })
   }
 
 
+  // ----------------------------------------------------------------------
+  markup.lookAt = function(directory) {
+    return function (req, res) {
+      fs.exists (directory + req.url, function (exist) {
+        if (req.url.endswith('/')) {
+          res.render (req.url.substring(1) + 'index');
+        } else if (exist) {
+          var name = req.url.substring(1, req.url.length - 5) // Seriously !? (REMOVE .html)
+          res.render (name);
+        } else {
+          if (markup.debug) console.log ('Could not find the file', directory + req.url)
+          res.render ('404'); // File not found!
+        }
+      })
+    }
+  }
 
 
 // Export the module ======================================================
