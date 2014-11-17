@@ -282,41 +282,51 @@
     }
   }
 
-
   // ----------------------------------------------------------------------
   markup.lookFor = function(req, res) {
-    // Note: As express doesn't allow to recover we try to check 
-    // everything first, but it's a bad design !
-    fs.exists (markup.directory + req.url, function (exist) {
-      if (req.url.endswith('/')) {
-        res.render (req.url.substring(1) + 'index');
-      } else if (exist) {
-        var name = req.url.substring(1, req.url.length - 5) // Seriously !? (REMOVE .html)
-        res.render (name);
-      } else {
-        if (markup.debug) console.log ('Could not find the file', markup.directory + req.url)
-        res.render ('404'); // File not found!
-      }
-    })
-  }
-
-
-  // ----------------------------------------------------------------------
-  markup.lookAt = function(directory) {
-    return function (req, res) {
-      fs.exists (directory + req.url, function (exist) {
+    // if (req.url == '/')
+    //   res.render ('index');
+    // else {
+      // Note: As express doesn't allow to recover we try to check 
+      // everything first, but it's a bad design !
+      fs.exists (markup.directory + req.url, function (exist) {
         if (req.url.endswith('/')) {
           res.render (req.url.substring(1) + 'index');
         } else if (exist) {
           var name = req.url.substring(1, req.url.length - 5) // Seriously !? (REMOVE .html)
           res.render (name);
         } else {
-          if (markup.debug) console.log ('Could not find the file', directory + req.url)
+          if (markup.debug) console.log ('Could not find the file', markup.directory + req.url)
           res.render ('404'); // File not found!
         }
       })
+    // }
+  }
+
+  // ----------------------------------------------------------------------
+  markup.lookAt = function(directory) {
+    return function (req, res) {
+      console.log ('LOOK AT', directory, req.url)
+      if (req.url == '/')
+        res.render ('index');
+      else {
+        // Note: As express doesn't allow to recover we try to check 
+        // everything first, but it's a bad design !
+        fs.exists (directory + req.url, function (exist) {
+          var name = req.url.substring(1, req.url.length - 5) // Seriously !? (REMOVE .html)
+          if (exist) {
+            res.render (name);
+          } else {
+              if (markup.debug) console.log ('Could not find the file', directory + req.url)
+            res.render ('404'); // File not found!
+          }
+        })
+      }
     }
   }
+
+
+
 
 
 // Export the module ======================================================
