@@ -128,22 +128,43 @@
   markup.directory = './views'
 
   // ----------------------------------------------------------------------
+  markup.renderer = function (dir) {
+    return function (req, res, next) {
+      markup.renderFile (dir + req.path, new markupCtx(req), function (err, data) {
+        if (err) {
+          if (next) next() 
+        } else {
+          res.writeHead(200, {'Content-Type': 'text/html'});
+          res.end(data);
+        }
+      })
+    }
+  }
+
+  // ----------------------------------------------------------------------
   markup.renderFile = function (path, options, callback) {
 
     if (path.startswith ('/'))
       path = markup.directory + path;
 
-    if (options == null)
+    if (options == null) {
       options = new markupCtx({});
-    else if (!options.getParent)
+    } else if (typeof options === 'function') {
+      callback = options
+      options = new markupCtx({});
+    } else if (!options.getParent)
       options = new markupCtx(options)
 
     if (markup.debug) console.log ('renderFile', path)
 
     fs.readFile (path, function (err, data) {
       if (err && !path.endswith ('/500.html')) {
-        console.error (path, err)
-        markup.renderFile ('/500.html', options, callback)
+        if (err.code == 'EISDIR') 
+          markup.renderFile (path + '/index.html', options, callback)
+        else {
+          if (markup.debug) console.error (path, err)
+          markup.renderFile ('/500.html', options, callback)
+        }
       } else if (err) {
         callback (err, null)
       } else {
@@ -252,7 +273,7 @@
     }
     
     if (c == '/}') {
-      console.warn('Empty tag')
+      if (markup.debug) console.warn('Empty tag')
     }
     
     var command = c;
@@ -268,7 +289,7 @@
       }
       
       if (c == '/}' || c == '}') {
-        console.log('Cmd: '+ args);
+        if (markup.debug) console.log('Cmd: '+ args);
         return;
       }
       
@@ -306,7 +327,7 @@
   // ----------------------------------------------------------------------
   markup.lookAt = function(directory) {
     return function (req, res) {
-      console.log ('LOOK AT', directory, req.url)
+      if (markup.debug) console.log ('LOOK AT', directory, req.url)
       if (req.url == '/')
         res.render ('index');
       else {
