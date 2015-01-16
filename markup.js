@@ -130,7 +130,9 @@
   // ----------------------------------------------------------------------
   markup.renderer = function (dir) {
     return function (req, res, next) {
-      markup.renderFile (dir + req.path, new markupCtx(req), function (err, data) {
+      var ctx = new markupCtx(req)
+      ctx.directory = dir + '/'
+      markup.renderFile (dir + req.path, ctx, function (err, data) {
         if (err) {
           if (next) next() 
         } else {
@@ -144,8 +146,8 @@
   // ----------------------------------------------------------------------
   markup.renderFile = function (path, options, callback) {
 
-    if (path.startswith ('/'))
-      path = markup.directory + path;
+    if (!path.startswith (options.directory))
+       path = options.directory + path;
 
     if (options == null) {
       options = new markupCtx({});
